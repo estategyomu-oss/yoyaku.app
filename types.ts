@@ -1,7 +1,7 @@
 
 export enum Role {
-  ADMIN = 'admin',
-  USER = 'user'
+  admin = 'admin',
+  user = 'user'
 }
 
 export interface User {
@@ -9,16 +9,17 @@ export interface User {
   email: string;
   company: string;
   role: Role;
-  password?: string; // Stored in mock DB
+  password?: string;
 }
 
 export interface Slot {
   id: string;
   date: string; // YYYY-MM-DD
   startTime: string; // HH:mm
-  isReserved?: boolean;
-  reservationId?: string;
-  reservedByCompany?: string;
+  reservedCount: number;
+  maxCapacity: number;
+  isFull: boolean;
+  reservations: Reservation[]; // Changed from reservedByCompanies: string[]
 }
 
 export interface Reservation {

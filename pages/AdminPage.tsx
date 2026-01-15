@@ -21,7 +21,8 @@ const AdminPage: React.FC<{ user: User }> = ({ user }) => {
     setIsGenerating(false);
   };
 
-  if (user.role !== Role.ADMIN) {
+  // Fix: Changed Role.ADMIN to Role.admin
+  if (user.role !== Role.admin) {
     return <div className="p-8 text-red-600">このページにアクセスする権限がありません。</div>;
   }
 

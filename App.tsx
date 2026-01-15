@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { User, Role } from './types';
+import { User, Role, Reservation } from './types';
 import { db } from './lib/mock-db';
 import LoginPage from './pages/LoginPage';
 import SlotsPage from './pages/SlotsPage';
@@ -14,13 +14,16 @@ const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [currentView, setCurrentView] = useState<View>('login');
   const [loading, setLoading] = useState(true);
+  
+  // State for rescheduling process
+  const [reschedulingRes, setReschedulingRes] = useState<(Reservation & { slot: { startTime: string } }) | null>(null);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('session_user');
     if (savedUser) {
       const u = JSON.parse(savedUser);
       setUser(u);
-      setCurrentView(u.role === Role.ADMIN ? 'admin' : 'slots');
+      setCurrentView(u.role === Role.admin ? 'admin' : 'slots');
     }
     setLoading(false);
   }, []);
@@ -28,7 +31,7 @@ const App: React.FC = () => {
   const handleLogin = (u: User) => {
     setUser(u);
     localStorage.setItem('session_user', JSON.stringify(u));
-    setCurrentView(u.role === Role.ADMIN ? 'admin' : 'slots');
+    setCurrentView(u.role === Role.admin ? 'admin' : 'slots');
   };
 
   const handleLogout = () => {
@@ -42,6 +45,15 @@ const App: React.FC = () => {
     localStorage.setItem('session_user', JSON.stringify(updatedUser));
   };
 
+  const startRescheduling = (res: Reservation & { slot: { startTime: string } }) => {
+    setReschedulingRes(res);
+    setCurrentView('slots');
+  };
+
+  const cancelRescheduling = () => {
+    setReschedulingRes(null);
+  };
+
   if (loading) return <div className="flex items-center justify-center h-screen">Loading...</div>;
 
   if (!user || currentView === 'login') {
@@ -51,35 +63,46 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Navigation */}
-      <nav className="bg-white border-b border-slate-200 sticky top-0 z-10">
+      <nav className="bg-white border-b border-slate-200 sticky top-0 z-20">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-8">
-            <h1 className="text-xl font-bold text-indigo-600 tracking-tight cursor-pointer" onClick={() => setCurrentView(user.role === Role.ADMIN ? 'admin' : 'slots')}>BookingSys</h1>
+            <h1 className="text-xl font-bold text-indigo-600 tracking-tight cursor-pointer" onClick={() => setCurrentView(user.role === Role.admin ? 'admin' : 'slots')}>BookingSys</h1>
             <div className="flex space-x-4">
               <button
-                onClick={() => setCurrentView('slots')}
+                onClick={() => {
+                  setCurrentView('slots');
+                }}
                 className={`px-3 py-2 text-sm font-medium rounded-md ${currentView === 'slots' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:text-indigo-600'}`}
               >
                 予約枠
               </button>
-              {user.role === Role.USER && (
+              {user.role === Role.user && (
                 <button
-                  onClick={() => setCurrentView('my')}
+                  onClick={() => {
+                    setCurrentView('my');
+                    cancelRescheduling();
+                  }}
                   className={`px-3 py-2 text-sm font-medium rounded-md ${currentView === 'my' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:text-indigo-600'}`}
                 >
                   マイ予約
                 </button>
               )}
-              {user.role === Role.ADMIN && (
+              {user.role === Role.admin && (
                 <button
-                  onClick={() => setCurrentView('admin')}
+                  onClick={() => {
+                    setCurrentView('admin');
+                    cancelRescheduling();
+                  }}
                   className={`px-3 py-2 text-sm font-medium rounded-md ${currentView === 'admin' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:text-indigo-600'}`}
                 >
                   管理者
                 </button>
               )}
               <button
-                onClick={() => setCurrentView('profile')}
+                onClick={() => {
+                  setCurrentView('profile');
+                  cancelRescheduling();
+                }}
                 className={`px-3 py-2 text-sm font-medium rounded-md ${currentView === 'profile' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:text-indigo-600'}`}
               >
                 アカウント設定
@@ -103,8 +126,23 @@ const App: React.FC = () => {
 
       {/* Main Content */}
       <main className="flex-1 max-w-6xl w-full mx-auto p-4 md:p-8">
-        {currentView === 'slots' && <SlotsPage user={user} />}
-        {currentView === 'my' && <MyReservationsPage user={user} />}
+        {currentView === 'slots' && (
+          <SlotsPage 
+            user={user} 
+            reschedulingItem={reschedulingRes} 
+            onCancelRescheduling={cancelRescheduling}
+            onCompleteRescheduling={() => {
+              cancelRescheduling();
+              setCurrentView('my');
+            }}
+          />
+        )}
+        {currentView === 'my' && (
+          <MyReservationsPage 
+            user={user} 
+            onReschedule={startRescheduling}
+          />
+        )}
         {currentView === 'admin' && <AdminPage user={user} />}
         {currentView === 'profile' && <ProfilePage user={user} onUpdate={handleProfileUpdate} />}
       </main>
