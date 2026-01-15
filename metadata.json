@@ -1,0 +1,5 @@
+{
+  "name": "Corporate Reservation System",
+  "description": "A full-stack booking system for internal slot generation and external company reservations with rigid concurrency controls and RBAC.",
+  "requestFramePermissions": []
+}
